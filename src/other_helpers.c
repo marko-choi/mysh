@@ -57,16 +57,11 @@ void bg_process_done(int sig) {
         char done_msg[MAX_STR_LEN * 3];
         done_msg[0] = '\0';
         sprintf(done_msg, "[%d]+  Done \t %s\n", child_num, child_cmd);
-        // sprintf(done_msg, "[%d - %d]+ Done\t%s\n", child_num, pid, child_cmd);
-        // fprintf(stdout, done_msg);
+
         display_message(done_msg);
 
         // Reset counter once all processes are done
-        // printf("\tChild number: %d\n", child_num);
-        // printf("\tTotal number: %d\n", process_num);
-
         if (child_num + 1 == process_num) {
-            
             process_num = 1;
         }
 
@@ -103,7 +98,6 @@ void command_execution(int *token_count, char **token_arr){
         }
         // Assignment statement
         else if (strchr(token_arr[0], '=') != NULL ) {
-            // fprintf(stdout, "Executing statement: %s \n", token_arr[0]);
             char *curr_ptr = (char*) strtok(token_arr[0], "=");
             char *name = curr_ptr;
             curr_ptr= (char*) strtok(NULL, DELIMITERS);
@@ -127,13 +121,9 @@ void command_execution(int *token_count, char **token_arr){
             else if (ret == 0) {
                 execvp(token_arr[0], token_arr);
                 display_error("ERROR: Unrecognized command: ", token_arr[0]);
-                // display_message("Child process running command\n");
                 exit(1);
-                // return;
             }
-            // display_message("Parent process waiting for child to finish\n");
             wait(&value);
-            // display_message("Child has finished\n");
 
         }
     }
@@ -144,9 +134,7 @@ void recurse_file(char *path, int depth, int current_depth, bool f_flag, char* f
     if (current_depth == 0) current_depth = 1;
     struct dirent *diret;
     DIR *dir = opendir(path);
-    // if (errno == ENOENT) {
-    //     display_error("ERROR: directory does not exist:", path);
-    // };
+
     while ((diret = readdir(dir)) != NULL && depth >= current_depth) {
             char file[500];
             char print_file[500];
@@ -165,8 +153,6 @@ void recurse_file(char *path, int depth, int current_depth, bool f_flag, char* f
             }
             else if (strstr(diret->d_name, f_substring) != NULL){
                 sprintf(file, "%s", diret->d_name);
-                
-                // TODO: fix this for loop
 
                 for (int i = 1; i < current_depth; i++){
                     strcat(print_file, " ");
@@ -185,10 +171,6 @@ void recurse_file(char *path, int depth, int current_depth, bool f_flag, char* f
                 recurse_file(file, depth, current_depth+1, f_flag, f_substring);
             }
     }
-    // char close_path[500];
-    // close_path[0] = '\0';
-    // strcpy(close_path, diret->d_name);
-    // display_message(close_path);
 
     int err = closedir(dir);
     if (err == -1){
@@ -250,10 +232,7 @@ int setup_server_socket(char *port){
 }
 
 int setup_server_socket_helper(struct listen_sock *s, char *port) {
-    // struct listen_sock *s = malloc(sizeof(struct listen_sock));
-    // fprintf(stderr, "[Other Helpers: Server setup] Malloc'd server socket pointer: %p\n", s);
-    // fprintf(stderr, "[Other Helpers: Server setup] Server socket pointer: %p\n", server);
-
+    
     if(!(s->addr = malloc(sizeof(struct sockaddr_in)))) {
         // display_error("ERROR: Server address failed to store on heap", "");
         return -1;
@@ -296,10 +275,6 @@ int setup_server_socket_helper(struct listen_sock *s, char *port) {
         return -1;
     }
 
-
-    // server = s;
-    // fprintf(stderr, "[Other Helpers: Server setup] Finished malloc'd server socket pointer: %p | Socket descriptor: %d \n", s, s->sock_fd);
-    // fprintf(stderr, "[Other Helpers: Server setup] Finished server socket pointer: %p | Socket descriptor: %d \n", server, server->sock_fd);
     return 0;
 }
 
@@ -313,18 +288,14 @@ int find_network_newline(const char *buf, int inbuf) {
 }
 
 int read_from_socket(int sock_fd, char *buf, int *inbuf) {
-    // fprintf(stderr, "Current socket: %d\n", sock_fd);
     int num_read = read(sock_fd, buf + *inbuf, BUF_SIZE - *inbuf);
-    // printf("Buf: %s Inbuf: %d\n", buf, *inbuf);
 
     if (num_read == 0) return 1;  // occurs when client disconnects from server
     else if (num_read == -1) return -1; 
 
     *inbuf += num_read;
     for (int i = 0; i <= *inbuf-2; i++){
-        // fprintf(stderr, "%c", buf[i]);
         if (buf[i] == '\r' && buf[i+1] == '\n') {
-            //  fprintf(stderr, "Network newline received\n");
             return 0;
         }
     }
@@ -334,15 +305,12 @@ int read_from_socket(int sock_fd, char *buf, int *inbuf) {
 
 int get_message(char **dst, char *src, int *inbuf) {
     
-    // fprintf(stderr, "%d\n", *src);
     int msg_len = find_network_newline(src, *inbuf);
-    // printf("[Get Message] Message: %s length: %d\n", src, msg_len);
     if (msg_len == -1) return 1;
 
     *dst = malloc(BUF_SIZE);
     if (*dst == NULL) {
         display_error("ERROR: Failed to allocate memory on the heap for message", "");
-        // perror("malloc");
         return 1;
     }
     
@@ -368,8 +336,6 @@ int write_to_socket(int sock_fd, char *buf, int len) {
         len -= ret;
         buf += ret;
     }
-
-    // printf("Written message '%s' to user %d\n", &buf, sock_fd);
 
     if (len != 0) return 1;
     return 0;
@@ -469,8 +435,6 @@ int create_server(char **token_arr, struct listen_sock s) {
 
     // Linked list of clients
     clients = NULL;
-
-    // setup_server_socket(&s, token_arr[1]);
     
     // Set up SIGINT handler
     struct sigaction sa_sigint;
@@ -508,15 +472,11 @@ int create_server(char **token_arr, struct listen_sock s) {
          */
         if (FD_ISSET(s.sock_fd, &listen_fds)) {
             int client_fd = server_accept_connection(s.sock_fd, &clients);
-            // if (client_fd < 0) {
-                // display_message("Failed to accept incoming connection.");
-                // continue;
-            // }
+
             if (client_fd > max_fd) {
                 max_fd = client_fd;
             }
             FD_SET(client_fd, &all_fds);
-            // display_message("Accepted connection\n");
         }
 
         if (sigint_received) break;
@@ -542,11 +502,10 @@ int create_server(char **token_arr, struct listen_sock s) {
             char *msg;
             // Loop through buffer to get complete message(s)
             while (client_closed == 0 && !get_message(&msg, curr->buf, &(curr->inbuf))) {
-                // printf("Echoing message from %s.\n", curr->username);
+
                 char line[BUF_SIZE];
                 line[0] = '\0';
-                // strncat(write_buf, curr->username, MAX_NAME);
-                // strncat(write_buf, " ", MAX_NAME);
+
                 strncat(line, msg, MAX_USER_MSG);
                 free(msg);
                 int data_len = strlen(line);
@@ -557,21 +516,13 @@ int create_server(char **token_arr, struct listen_sock s) {
                 test[0] = '\0';
                 sprintf(test, "\n%s", line);
                 display_message(test);
-                // display_message(test);
                 display_message("mysh$ ");
-                // write(STDIN_FILENO, write_buf, data_len);
                 
                 while (dest_c) {
-                    // fprintf(stderr, "Current user: %s Designated user: %s\n", curr->username, dest_c->username);
+
                     if (dest_c != curr) {
                         int ret = write_buf_to_client(dest_c, line, data_len);
-                        // if (ret == 0) {
-                            // char line[BUF_SIZE];                            
-                            // sprintf(line, "Sent message from %s (%d) to %s (%d).\n",
-                                // curr->username, curr->sock_fd,
-                                // dest_c->username, dest_c->sock_fd);
-                            // display_message(line);
-                        // }
+
                         if (ret != 0) {
                             if (ret == 2) {
                                close(dest_c->sock_fd);
@@ -640,10 +591,9 @@ int create_client(char **token_arr) {
     struct sockaddr_in server;
     server.sin_family = AF_INET;
     server.sin_port = htons(strtol(token_arr[1], NULL, 10));
-    // if (inet_pton(AF_INET, "127.0.0.1", &server.sin_addr) < 1) {
+
     if (inet_pton(AF_INET, token_arr[2], &server.sin_addr) < 1) {
         display_error("ERROR: Client internet address is wrong.", "");
-        // perror("client: inet_pton");
         close(s.sock_fd);
         return -1;
     }
@@ -651,7 +601,6 @@ int create_client(char **token_arr) {
     // Connect to the server.
     if (connect(s.sock_fd, (struct sockaddr *)&server, sizeof(server)) == -1) {
         display_error("ERROR: Client cannot connect to server.", "");
-        // perror("client: connect");
         close(s.sock_fd);
         return -1;
     }
@@ -705,7 +654,6 @@ int create_client(char **token_arr) {
         FD_SET(STDIN_FILENO, &read_fds);
         FD_SET(s.sock_fd, &read_fds);
 
-        // printf("Waiting to select...........\n");
         
         int num_ready = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
         if (num_ready < 0) {  
@@ -717,26 +665,14 @@ int create_client(char **token_arr) {
                 char buffer[MAX_PROTO_MSG];
                 buffer[0] = '\0';
                 fgets(buffer, MAX_STR_LEN, stdin);
-                // fprintf(stderr, "Stuck in STDIN, after fgets msg %s\n", buffer);
+
                 int read_len = strlen(buffer);
                 if (read_len == 0) {break; } // STDIN CLOSES
                 buffer[read_len] = '\r';
                 buffer[read_len + 1] = '\n';
                 
-                // bytes_read = read(STDIN_FILENO, &buf, MAX_USER_MSG);
-                // if (sendto(s.sock_fd, &buffer, read_len + 2, 0, (struct sockaddr*) &server, sizeof(server)) < 0) { 
-                // printf("%s", buffer);
                 write(s.sock_fd, &buffer, read_len + 2);
-                //     display_error("ERROR: Message to server failed", ""); 
-                //     return -1;
-                // }
-                // fprintf(stderr, "Stuck in STDIN, after fgets, after write\n");
-                
-            // }       
-            // fprintf(stderr, "Done writing to server\n");
         }
-
-
 
         /*
          * Step 4: Read server-sent messages from the socket.
@@ -756,10 +692,7 @@ int create_client(char **token_arr) {
             printf("%s", msg);
             free(msg);
         }
-
-
     }
-    
     close(s.sock_fd);
     return 0;
 }
@@ -795,14 +728,11 @@ int write_buf_to_client(struct client_sock *c, char *buf, int len) {
  * Update clients pointer if head node was removed.
  */
 int remove_client(struct client_sock **curr, struct client_sock **clients) {
-    // compare struct pointers (curr)
 
-    // Loops from the list of client sockets in clients 
     
     // Case: head node == curr
     if ((*clients) == (*curr)) {
-        // fprintf(stderr, "Current client file descriptor: %d\n", (*clients)->sock_fd);
-        // fprintf(stderr, "Current curr file descriptor: %d\n", (*curr)->sock_fd);
+
         struct client_sock *pointer = *clients;    
         close((*clients)->sock_fd);
         if ((*clients)->next == NULL) {
@@ -818,18 +748,13 @@ int remove_client(struct client_sock **curr, struct client_sock **clients) {
     }
 
     // Case: curr is not the head node 
-    // TODO: Fix bug from disconnecting a user
     while ((*clients)->next != NULL) {
-        // fprintf(stderr, "Current client file descriptor: %d\n", (*clients)->sock_fd);
-        // fprintf(stderr, "Current curr file descriptor: %d\n", (*curr)->sock_fd);
+
         if ((*clients)->next == *curr) {
-            
-            
+                        
             close((*clients)->next->sock_fd);        
             struct client_sock *pointer = (*clients)->next;
-            // if ((*clients)->next->next == NULL) {
-            //     fprintf(stderr, "LAST NODE\n");
-            // } 
+
             (*clients)->next = (*clients)->next->next;
              *curr = (*clients)->next; 
             free(pointer);
@@ -860,7 +785,6 @@ void increment_process_num(){ process_num++; }
 void decrement_process_num(){ process_num--; }
 
 struct listen_sock *get_server_socket(){ 
-    // fprintf(stderr, "[Other Helpers: Get Server Socket] Server socket pointer: %p | Socket descriptor: %d\n", &s, s.sock_fd);
     return &s; 
     }
 struct client_sock *get_client_sockets(){ return clients; } // Linked list of clients

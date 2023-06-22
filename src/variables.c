@@ -24,7 +24,6 @@ void assign_value(char* var_name, char* var_val){
     int assignment = 0;
     
     for (int i=0; i < VARIABLE_COUNT; i++){
-    // for (int i = 0; i < sizeof(var_lst) / sizeof(var_lst[0]); i++) {
         // Checks for any pre-assigned var_names that are the same
         if (strncmp(var_lst[i]->name, var_name, strlen(var_name)) == 0){
 
@@ -69,7 +68,6 @@ char* value_lookup(char* var_name){
 // Freeing all memory
 void free_variables(){
     for (int i = 0; i < VARIABLE_COUNT; i++){
-    // for (int i = 0; i < sizeof(var_lst) / sizeof(var_lst[0]); i++) {
         free(var_lst[i]);
     }
 }

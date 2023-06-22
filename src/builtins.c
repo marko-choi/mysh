@@ -20,7 +20,6 @@
 
 int server_status = 0;
 int server_pid; 
-// int server_pipe_read_fd;
 
 // ====== Command execution =====
 
@@ -100,7 +99,7 @@ ssize_t bn_ls(char **tokens){
         // read --d <depth value>
         else if(strncmp(tokens[index], "--d", 4) == 0) {
             char *ptr;
-            // TODO: handle errors of strtol
+
             if(tokens[index+1] == NULL || strstr(tokens[index+1], "--") != NULL){
                 display_error("ERROR: --d requires a depth value", "");
                 return -1;
@@ -183,8 +182,6 @@ ssize_t bn_cd(char **tokens){
         index++;
     }
 
-    // TODO: fix cd ..................... -> if doesnt exist, throw that back
-
     if (tokens[1] != NULL) {
         int count_dots = 0;
         size_t cd_length = strlen(tokens[1]);
@@ -194,7 +191,6 @@ ssize_t bn_cd(char **tokens){
         }
     
         // Expands the '...' into '../.. etc'
-        // char path[3 * (count_dots - 1) + 1];
         char path[MAX_STR_LEN * 3];
         path[0] = '\0';
         if (count_dots > 2) {
@@ -236,10 +232,7 @@ ssize_t bn_cat(char **tokens){
     if (!tokens[1]){
         
         // Checks for stdin
-        // if (fgets(line, MAX_STR_LEN + 1, stdin) == NULL){
         if(isatty(0)){
-            // print("test");
-            // fprintf(stderr, "ERROR: No input source provided\n");
             display_error("ERROR: No input source provided", "");
             return -1;
         }
@@ -380,17 +373,14 @@ ssize_t bn_wc(char **tokens){
 ssize_t bn_kill(char **tokens){
 
     // correct usage: kill [pid] [signum]
-    // printf("kill running\n");
     for (int i = 0; i < 2; i++) {
         if (tokens[i] == NULL) {
             display_error("ERROR: Correct usage: kill [pid] [signum]", "");
             return -1;
         }
-        // printf("%s ", tokens[i]);
     }
 
         int pid = strtol(tokens[1], NULL, 10);
-        // printf("Killing process: %d", pid);
         // if signum not provided, send SIGTERM
         int external_process = kill(pid, 0);
 
@@ -415,7 +405,7 @@ ssize_t bn_kill(char **tokens){
             }
 
         } else {
-            //sends signal number <signum> to the process id
+            // sends signal number <signum> to the process id
             // tokens[1] - pid
             // tokens[2] - signum
             bool error = false;
@@ -468,23 +458,7 @@ ssize_t bn_ps(char **tokens){
     // sleep 8574
     // mysh$
 
-    // Rough implementation
-    // for (int i = 0; process_lst->processes[i]; i++){
-    //     char process[MAX_STR_LEN];
-    //     process[0] = '\0';
-    //     sprintf("%s ", process_lst->processes[i]->cmd[0]);
-    //     sprintf("%d", process_lst->processes[i]->pid);
-    //     display_message(process);
-    // }
-
     ps_lst head = process_lst;
-
-    // Prints parent pid
-    // bash: kill -s SIGTERM <parent pid>
-    // char line[MAX_STR_LEN * 3];
-    // line[0] = '\0';
-    // sprintf(line, "Parent process: %d\n", head->pid);
-    // display_message(line);
 
     if (head->next_process != NULL){
         head = head->next_process;
@@ -517,42 +491,21 @@ ssize_t bn_start_server(char **tokens){
         return -1;
     }
 
-    // TODO: Check if port is ok
     // Call start_server function in other_helpers.c
-    
-
-    // fprintf(stderr, "[Builtins: Get Server Socket] Server socket pointer: %p | Socket descriptor : %d\n", server, server->sock_fd);
-    // setup_server_socket(server, tokens[1]);
-    // fprintf(stderr, "[Builtins: Server setup] Server socket pointer: %p | Socket descriptor : %d\n", server, server->sock_fd);
     if (setup_server_socket(tokens[1]) != 0) {
         return -1;
     } 
     struct listen_sock* server = get_server_socket();
-    // fprintf(stderr, "[Builtins: Server setup] Server socket pointer: %p | Socket descriptor : %d\n", server, server->sock_fd);
     int ret = fork();
     
-    // child process runs server
     if (ret == 0) {
-        // close(pipe_fd[0]); // Close child reading end
-
-        // dup2(pipe_fd[1], STDOUT_FILENO);
         create_server(tokens, *server);
-        // close(pipe_fd[1]); // Close child writing end
-        // fprintf(stderr, "Server process exiting\n");
-        // if (err == -1) {
-        //     display_error("ERROR: Builtin failed: start-server", "");
-        // }
         exit(0);
     }
 
-    // close(pipe_fd[1]); // Close parent writing end
-    // server_pipe_read_fd = pipe_fd[0];
-    // dup2(STDIN_FILENO, pipe_fd[0]); // Reroutes parent reading end to STDIN
-    
     // parent process continues on
     server_pid = ret;
     server_status = 1;
-    // fprintf(stderr, "SERVER STARTED AT PROCESS ID : %d\n", server_pid);
 
     return 0;
 }
@@ -560,22 +513,17 @@ ssize_t bn_start_server(char **tokens){
 ssize_t bn_close_server(char **tokens){
 
     // calls close server function in other_helpers.c
-    // close_server();
     if (server_status == 0) {
         display_error("ERROR: No servers running", "");
         return -1;
     }                      
     
-    // close(server_pipe_read_fd);
     signal(SIGCHLD, empty_handler);
     if (get_server_pid() != -1) { 
         kill(get_server_pid(), SIGINT);
     }
-    // server_clean_exit(get_server_socket(), get_client_sockets(), 0);
+
     signal(SIGCHLD, bg_process_done);
-    // int sersver_pid = get_server_pid();
-    // fprintf(stderr, "KILLED SERVER WITH PROCESS ID : %d\n", server_pid);
-        
     return 0; 
 }
 
@@ -633,36 +581,14 @@ ssize_t bn_send(char **tokens){
         return -1;
     }
     strcat(msg, "\n\r\n");
-    // display_message(msg);
     write(s.sock_fd, &msg, strlen(msg)+1);
     close(s.sock_fd);
-    // strcat(msg, "\r\n");
-    
-    // struct listen_sock* s = get_server_socket();
-    // int sent = sendto(s->sock_fd, msg, strlen(msg) + 2, 0, (struct sockaddr *) &server, sizeof(struct sockaddr_in));
-    // if (sent == -1) { display_message("Message could not be sent"); }
-    // else { fprintf(stderr, "Letters sent: %d", sent); }
 
-    
-    // struct client_sock *clients = get_client_sockets();
-
-    // while (clients) {
-    //     // write_buf_to_client(clients, msg, strlen(msg));
-    //     int sent = sendto(clients->sock_fd, msg, strlen(msg) + 2, 0, (struct sockaddr *) &server, sizeof(struct sockaddr_in));
-        // if (sent == -1) { display_message("Message could not be sent"); }
-        // else { fprintf(stderr, "Letters sent: %d", sent); }
-        // clients = clients->next;
-    // }
-
-
-
-    
     return 0;
 }
 
 ssize_t bn_start_client(char **tokens){
     int err = 0;
-    // display_message("STARTING CLIENT\n");
     if (tokens[1] == NULL) {
         err = 1;
         display_error("ERROR: No port provided", "");
@@ -674,7 +600,6 @@ ssize_t bn_start_client(char **tokens){
     if (err != 0) return -1;
 
     // Error checking for the name
-
     int hostname_length = strlen(tokens[2]);
     if (hostname_length > MAX_STR_LEN) {
         display_error("ERROR: Host name %s too long.", tokens[2]);
